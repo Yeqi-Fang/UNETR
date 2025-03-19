@@ -292,3 +292,57 @@ class UNETR(nn.Module):
         z0 = self.decoder0(z0)
         output = self.decoder0_header(torch.cat([z0, z3], dim=1))
         return output
+
+
+if __name__ == "__main__":
+    # 设置设备
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    
+    # 为了更快的测试，使用更小的图像尺寸
+    img_shape = (182, 365, 1)
+    input_dim = 42
+    output_dim = 42
+    
+    # 创建模型实例
+    model = UNETR(
+        img_shape=img_shape, 
+        input_dim=input_dim, 
+        output_dim=output_dim,
+        embed_dim=768,
+        patch_size=16,
+        num_heads=12
+    ).to(device)
+    
+    # 打印模型参数数量
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total parameters: {total_params:,}")
+    
+    # 创建随机输入
+    batch_size = 1
+    x = torch.rand(batch_size, input_dim, *img_shape).to(device)
+    
+    # 前向传播
+    print(f"Input shape: {x.shape}")
+    with torch.no_grad():
+        try:
+            output = model(x)
+            print(f"Output shape: {output.shape}")
+            print(f"Output min/max: {output.min().item():.4f}/{output.max().item():.4f}")
+        except Exception as e:
+            print(f"Error during forward pass: {e}")
+    
+    # 如果图像尺寸不是很大，可以尝试更大的批次
+    if img_shape[0] <= 64:
+        print("\nTesting with larger batch size...")
+        batch_size = 2
+        x = torch.rand(batch_size, input_dim, *img_shape).to(device)
+        
+        print(f"Input shape: {x.shape}")
+        with torch.no_grad():
+            try:
+                output = model(x)
+                print(f"Output shape: {output.shape}")
+                print(f"Forward pass successful with batch size {batch_size}")
+            except Exception as e:
+                print(f"Error with batch size {batch_size}: {e}")
